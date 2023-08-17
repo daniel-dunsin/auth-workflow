@@ -6,6 +6,8 @@ import mongoose from "mongoose";
 import settings from "./constants/settings";
 import { logger } from "./configs/logger.config";
 import { error_handler, not_found } from "./handlers/error.handler";
+import { setCache } from "./configs/cache.config";
+import auth_routes from "./routes/user.routes";
 
 const app = express();
 
@@ -16,6 +18,10 @@ app.use(helmet());
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+app.use(setCache);
+
+// routes
+app.use("/api/auth", auth_routes);
 
 app.all("*", not_found);
 app.use(error_handler);
@@ -24,6 +30,6 @@ const port = settings.port as string;
 
 mongoose.connect(settings.mongo.url as string).then(() => {
   app.listen(port, () => {
-    logger.debug(`Server is listening on port ${port}`);
+    logger.info(`Server is listening on port ${port}`);
   });
 });
