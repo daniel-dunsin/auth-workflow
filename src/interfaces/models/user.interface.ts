@@ -36,3 +36,9 @@ export interface IUserAuthToken {
   token: string;
   createdAt: Date;
 }
+
+export interface ISession {
+  _id: string;
+  live: boolean;
+  user: string | IUser | Types.ObjectId;
+}

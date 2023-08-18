@@ -50,3 +50,19 @@ export const ResetPasswordInput = object({
       .min(8, "Minimum of 8 characters is required for the password field"),
   }),
 });
+
+export const LoginInput = object({
+  body: object({
+    email: string().email(),
+    password: string()
+      .required()
+      .min(8, "Minimum of 8 characters is required for the password field"),
+    username: string(),
+  }),
+});
+
+export const RefreshTokenInput = object({
+  body: object({
+    refresh_token: string().required(),
+  }),
+});

@@ -22,12 +22,17 @@ import {
 import settings from "../constants/settings";
 import UserService from "./user.service";
 import { v4 } from "uuid";
+import { logger } from "../configs/logger.config";
+import SessionService from "./session.service";
+import Jwt_Helpers from "../helpers/jwt.helper";
 
 export default class AuthService {
   private readonly user_service: UserService;
+  private readonly session_service: SessionService;
 
   constructor() {
     this.user_service = new UserService();
+    this.session_service = new SessionService();
   }
   public create_token = async (user_id: string, token_type: ITokenTypes) => {
     try {
@@ -66,6 +71,8 @@ export default class AuthService {
           }/api/auth/verify-user/${user._id.toString()}/${token.token}`
         ),
       });
+
+      logger.info("Created Account");
     } catch (error: any) {
       throw new BadRequestError(error);
     }
@@ -161,6 +168,71 @@ export default class AuthService {
       }
 
       await this.user_service.reset_password(token.user as string, password);
+    } catch (error: any) {
+      throw new BadRequestError(error);
+    }
+  };
+
+  public login_user = async (
+    body: Partial<IUserAuth>
+  ): Promise<{ access_token: string; refresh_token: string; user: IUser }> => {
+    try {
+      const { email, password, username } = body;
+
+      const user_auth = await Auth.findOne({ $or: [{ username }, { email }] });
+
+      if (!user_auth) {
+        throw new NotFoundError("This user does not exist");
+      }
+
+      const is_password_correct = await user_auth.verifyPassword(
+        password as string
+      );
+
+      if (!is_password_correct) {
+        throw new BadRequestError("Email or username or password is incorrect");
+      }
+
+      const session = await this.session_service.create_session(user_auth._id);
+
+      const access_token = await Jwt_Helpers.sign_access_token(user_auth._id);
+      const refresh_token = await Jwt_Helpers.sign_refresh_token(
+        session?._id as string
+      );
+
+      const user = await this.user_service.find_user_by_email(user_auth.email);
+
+      return {
+        access_token,
+        refresh_token,
+        user,
+      };
+    } catch (error: any) {
+      logger.error("Unale to log in user");
+      throw new BadRequestError(error);
+    }
+  };
+
+  public refresh_access_token = async (
+    refresh_token: string
+  ): Promise<string> => {
+    try {
+      const decoded: { session_id: string } =
+        await Jwt_Helpers.verify_refresh_token(refresh_token);
+
+      if (!decoded) {
+        throw new BadRequestError("Refresh token does not exist");
+      }
+
+      const session = await this.session_service.update_session(
+        decoded.session_id
+      );
+
+      const access_token = await Jwt_Helpers.sign_access_token(
+        session?.user as string
+      );
+
+      return access_token;
     } catch (error: any) {
       throw new BadRequestError(error);
     }

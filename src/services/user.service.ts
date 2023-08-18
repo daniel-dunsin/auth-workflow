@@ -64,6 +64,52 @@ export default class UserService {
     }
   };
 
+  public find_auth_by_username = async (
+    username: string
+  ): Promise<IUserAuth> => {
+    try {
+      const user = await Auth.findOne({ username });
+
+      if (!user) {
+        throw new NotFoundError("User does not exist");
+      }
+
+      const { password, verified, ...rest } = user.toObject();
+
+      return rest as IUserAuth;
+    } catch (error: any) {
+      throw new BadRequestError(error.message);
+    }
+  };
+
+  public find_user_by_email = async (email: string): Promise<IUser> => {
+    try {
+      const user = await User.findOne({ email });
+
+      if (!user) {
+        throw new NotFoundError("User does not exist");
+      }
+
+      return user;
+    } catch (error: any) {
+      throw new BadRequestError(error.message);
+    }
+  };
+
+  public find_user_by_id = async (_id: string): Promise<IUser> => {
+    try {
+      const user = await User.findById(_id);
+
+      if (!user) {
+        throw new NotFoundError("User does not exist");
+      }
+
+      return user;
+    } catch (error: any) {
+      throw new BadRequestError(error.message);
+    }
+  };
+
   public verify_user = async (_id: string): Promise<void> => {
     try {
       const user = await Auth.findById(_id);
