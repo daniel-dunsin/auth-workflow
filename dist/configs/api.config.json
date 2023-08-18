@@ -1,0 +1,309 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Auth Workflow",
+    "description": "An authentication app built with Node.js, Mongo DB and Typescript",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Adejare Daniel",
+      "url": "https://github.com/daniel-dunsin",
+      "email": "adejaredaniel12@gmail.com"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://daniel-auth.onrender.com",
+      "description": ""
+    }
+  ],
+  "paths": {
+    "/api/auth/register": {
+      "post": {
+        "tags": ["Auth"],
+        "description": "Register a new user, verification email will be sent",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+
+                "properties": {
+                  "username": {
+                    "type": "string"
+                  },
+                  "email": {
+                    "type": "string"
+                  },
+                  "password": {
+                    "type": "string"
+                  },
+                  "confirm_password": {
+                    "type": "string"
+                  },
+                  "firstname": {
+                    "type": "string"
+                  },
+                  "lastname": {
+                    "type": "string"
+                  },
+                  "phone_number": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful sign up",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/200Responses"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/verify-user/{id}/{token}": {
+      "get": {
+        "tags": ["Auth"],
+        "description": "Verify user token after sign up",
+        "parameters": [
+          {
+            "name": "id",
+            "description": "The user id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful verification",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/200Responses"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/forgot-password": {
+      "post": {
+        "tags": ["Auth"],
+        "description": "Request Password Reset Code",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Code sent successfully",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/200Responses" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/reset-password/{token}": {
+      "patch": {
+        "tags": ["Auth"],
+        "description": "Reset Password",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "c6ac57bd-5a26-41d5-a772-27d61e3c60ab"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "password": { "type": "string" },
+                  "confirm_password": { "type": "string" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "tags": ["Auth"],
+        "description": "Log in user",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": { "type": "string" },
+                  "username": { "type": "string" },
+                  "password": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful log in",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Login200Response" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "api/auth/refresh": {
+      "post": {
+        "tags": ["Auth"],
+        "description": "Refresh access token. (do this every 10 minutes)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "refresh_token": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Access token successfully refreshed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string" },
+                    "data": {
+                      "type": "object",
+                      "properties": { "access_token": { "type": "string" } }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "/api/auth/logout": {
+      "get": {
+        "tags": ["Auth"],
+        "security": [{ "bearer": [] }],
+        "responses": {
+          "200": {
+            "description": "Successful log out",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/200Responses" }
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "api/auth": {
+      "get": {
+        "description": "Get User Profile",
+        "tags": ["User"],
+        "security": [{ "bearer": [] }],
+        "responses": {
+          "200": {
+            "description": "Profile fetched successfully",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Login200Response" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "tags": ["Auth", "User"],
+  "components": {
+    "schemas": {
+      "200Responses": {
+        "type": "object",
+        "properties": { "message": { "type": "string" } }
+      },
+      "Login200Response": {
+        "type": "object",
+        "properties": {
+          "message": { "type": "string" },
+          "data": {
+            "type": "object",
+            "properties": {
+              "access_token": { "type": "string" },
+              "refresh_token": { "type": "string" },
+              "user": {
+                "type": "object",
+                "properties": {
+                  "email": { "type": "string" },
+                  "firstname": { "type": "string" },
+                  "lastname": { "type": "string" },
+                  "username": { "type": "string" },
+                  "phone_number": { "type": "string" },
+                  "_id": { "type": "string" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "bearer": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    }
+  }
+}
