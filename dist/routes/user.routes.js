@@ -1,0 +1,20 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const validate_input_1 = __importDefault(require("../middlewares/validate_input"));
+const user_schema_1 = require("../schemas/user.schema");
+const auth_controller_1 = __importDefault(require("../controllers/auth.controller"));
+const is_auth_1 = __importDefault(require("../middlewares/is_auth"));
+const router = (0, express_1.Router)();
+router.get("/", is_auth_1.default, auth_controller_1.default.get_profile);
+router.post("/register", (0, validate_input_1.default)(user_schema_1.CreateUserSchema), auth_controller_1.default.register);
+router.post("/login", (0, validate_input_1.default)(user_schema_1.LoginInput), auth_controller_1.default.login);
+router.get("/logout", is_auth_1.default, auth_controller_1.default.logout);
+router.get("/verify-user/:id/:token", (0, validate_input_1.default)(user_schema_1.VerifyUserInput), auth_controller_1.default.verify_email_otp);
+router.post("/forgot-password", (0, validate_input_1.default)(user_schema_1.RequestPasswordCodeInput), auth_controller_1.default.request_reset_password_code);
+router.patch("/reset-password/:token", (0, validate_input_1.default)(user_schema_1.ResetPasswordInput), auth_controller_1.default.reset_password);
+router.post("/refresh", (0, validate_input_1.default)(user_schema_1.RefreshTokenInput), auth_controller_1.default.refresh_access_token);
+exports.default = router;

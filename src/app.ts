@@ -8,6 +8,8 @@ import { logger } from "./configs/logger.config";
 import { error_handler, not_found } from "./handlers/error.handler";
 import { setCache } from "./configs/cache.config";
 import auth_routes from "./routes/user.routes";
+import swagger from "swagger-ui-express";
+const api_doc = require("./configs/api.config.json");
 
 const app = express();
 
@@ -18,10 +20,11 @@ app.use(helmet());
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-app.use(setCache);
+// app.use(setCache);
 
 // routes
 app.use("/api/auth", auth_routes);
+app.use("/doc", swagger.serve, swagger.setup(api_doc));
 
 app.all("*", not_found);
 app.use(error_handler);

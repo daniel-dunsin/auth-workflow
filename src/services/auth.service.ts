@@ -10,6 +10,7 @@ import Auth from "../models/user.auth.model";
 import User from "../models/user.model";
 import {
   BadRequestError,
+  ForbiddenError,
   NotFoundError,
 } from "../handlers/error-responses.handler";
 import Token from "../models/user.token.model";
@@ -183,6 +184,10 @@ export default class AuthService {
 
       if (!user_auth) {
         throw new NotFoundError("This user does not exist");
+      }
+
+      if (!user_auth.verified) {
+        throw new ForbiddenError("User is not verified");
       }
 
       const is_password_correct = await user_auth.verifyPassword(
