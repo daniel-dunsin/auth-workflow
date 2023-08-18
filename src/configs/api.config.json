@@ -249,7 +249,7 @@
       }
     },
 
-    "api/auth": {
+    "/api/auth": {
       "get": {
         "description": "Get User Profile",
         "tags": ["User"],

@@ -9,6 +9,7 @@ import { error_handler, not_found } from "./handlers/error.handler";
 import { setCache } from "./configs/cache.config";
 import auth_routes from "./routes/user.routes";
 import swagger from "swagger-ui-express";
+import path from "path";
 const api_doc = require("./configs/api.config.json");
 
 const app = express();
@@ -23,6 +24,9 @@ app.use(express.urlencoded({ extended: false }));
 // app.use(setCache);
 
 // routes
+app.get("/", (req, res) => [
+  res.status(200).sendFile(path.join(__dirname, "./templates/index.html")),
+]);
 app.use("/api/auth", auth_routes);
 app.use("/doc", swagger.serve, swagger.setup(api_doc));
 
