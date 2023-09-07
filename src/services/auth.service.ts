@@ -36,210 +36,181 @@ export default class AuthService {
     this.session_service = new SessionService();
   }
   public create_token = async (user_id: string, token_type: ITokenTypes) => {
-    try {
-      // check if the token already exists
-      const token_in_db = await Token.findOne({
-        user: user_id,
-        type: token_type,
-      });
+    // check if the token already exists
+    const token_in_db = await Token.findOne({
+      user: user_id,
+      type: token_type,
+    });
 
-      if (token_in_db) {
-        throw new BadRequestError("Token exitst");
-      }
-
-      const token = await Token.create({ user: user_id, type: token_type });
-
-      return token;
-    } catch (error) {
-      throw new CustomError(500, "Unable to create token");
+    if (token_in_db) {
+      throw new BadRequestError("Token exitst");
     }
+
+    const token = await Token.create({ user: user_id, type: token_type });
+
+    return token;
   };
 
   public register = async (body: Partial<IUser & IUserAuth>): Promise<void> => {
-    try {
-      const user = await this.user_service.create_user(body);
-      const token = await this.create_token(
-        user?._id as string,
-        IToken.verify_otp_token
-      );
-      await send_mail({
-        to: user.email,
-        subject: "Verify Account",
-        html: verify_email_html(
-          user.username as string,
-          `${
-            settings.frontend_url
-          }/api/auth/verify-user/${user._id.toString()}/${token.token}`
-        ),
-      });
-
-      logger.info("Created Account");
-    } catch (error: any) {
-      throw new BadRequestError(error);
-    }
+    const user = await this.user_service.create_user(body);
+    const token = await this.create_token(
+      user?._id as string,
+      IToken.verify_otp_token
+    );
+    await send_mail({
+      to: user.email,
+      subject: "Verify Account",
+      html: verify_email_html(
+        user.username as string,
+        `${settings.frontend_url}/verify-email/${user._id.toString()}/${
+          token.token
+        }`
+      ),
+    });
   };
 
   public verify_email_token = async (body: Partial<IUserAuthToken>) => {
-    try {
-      const { user, token } = body;
+    const { user, token } = body;
 
-      const token_in_db = await Token.findOne({ token, user });
+    const token_in_db = await Token.findOne({ token, user });
 
-      // if the token does not exist send them a new token
-      if (!token_in_db) {
-        const user_db = await this.user_service.find_auth_by_id(user as string);
+    // if the token does not exist send them a new token
+    if (!token_in_db) {
+      const user_db = await this.user_service.find_auth_by_id(user as string);
 
-        const token = await Token.create({
-          user,
-          type: IToken.verify_otp_token,
-        });
+      const token = await Token.create({
+        user,
+        type: IToken.verify_otp_token,
+      });
 
-        await send_mail({
-          to: user_db.email,
-          subject: "Verify Account",
-          html: verify_email_html(
-            user_db.username,
-            `${settings.frontend_url}/api/auth/verify-user/${user}/${token}`
-          ),
-        });
+      await send_mail({
+        to: user_db.email,
+        subject: "Verify Account",
+        html: verify_email_html(
+          user_db.username,
+          `${settings.frontend_url}/verify-email/${user?.toString()}/${
+            token.token
+          }`
+        ),
+      });
 
-        throw new BadRequestError(
-          "Unable to verify account, another link has been sent again to your email"
-        );
-      }
-
-      await this.user_service.verify_user(user as string);
-
-      await Token.findByIdAndDelete(token_in_db._id);
-    } catch (error: any) {
-      throw new BadRequestError(error.message);
+      throw new BadRequestError(
+        "Unable to verify account, another link has been sent again to your email"
+      );
     }
+
+    await this.user_service.verify_user(user as string);
+
+    await Token.findByIdAndDelete(token_in_db._id);
   };
 
   public request_password_code = async (email: string) => {
-    try {
-      const user = await this.user_service.find_auth_by_email(email);
+    const user = await this.user_service.find_auth_by_email(email);
 
-      // check if the token exists. If yes, update the token with a new one and send a new email to the user
-      const token_in_db = await Token.findOne({
+    // check if the token exists. If yes, update the token with a new one and send a new email to the user
+    const token_in_db = await Token.findOne({
+      user: user._id,
+      type: IToken.password_reset_token,
+    });
+
+    let token;
+
+    if (token_in_db) {
+      const new_token = (await Token.findByIdAndUpdate(
+        token_in_db._id,
+        { token: v4() },
+        { new: true, runValidators: true }
+      )) as IUserAuthToken;
+
+      token = new_token.token;
+    } else {
+      const new_token = await Token.create({
         user: user._id,
         type: IToken.password_reset_token,
       });
 
-      let token;
-
-      if (token_in_db) {
-        const new_token = (await Token.findByIdAndUpdate(
-          token_in_db._id,
-          { token: v4() },
-          { new: true, runValidators: true }
-        )) as IUserAuthToken;
-
-        token = new_token.token;
-      } else {
-        const new_token = await Token.create({
-          user: user._id,
-          type: IToken.password_reset_token,
-        });
-
-        token = new_token.token;
-      }
-
-      const link = `${settings.frontend_url}/api/auth/reset-password/${token}`;
-
-      await send_mail({
-        to: user.email,
-        subject: "Reset Password",
-        html: password_reset_email(user.username, link),
-      });
-    } catch (error: any) {
-      throw new BadRequestError(error);
+      token = new_token.token;
     }
+
+    const link = `${settings.frontend_url}/api/auth/reset-password/${token}`;
+
+    await send_mail({
+      to: user.email,
+      subject: "Reset Password",
+      html: password_reset_email(user.username, link),
+    });
   };
 
   public reset_password = async (token_param: string, password: string) => {
-    try {
-      const token = (await Token.findOne({
-        token: token_param,
-        type: IToken.password_reset_token,
-      })) as IUserAuthToken;
+    const token = (await Token.findOne({
+      token: token_param,
+      type: IToken.password_reset_token,
+    })) as IUserAuthToken;
 
-      if (!token) {
-        throw new NotFoundError("Token does not exist or has expired");
-      }
-
-      await this.user_service.reset_password(token.user as string, password);
-    } catch (error: any) {
-      throw new BadRequestError(error);
+    if (!token) {
+      throw new NotFoundError("Token does not exist or has expired");
     }
+
+    await this.user_service.reset_password(token.user as string, password);
   };
 
   public login_user = async (
     body: Partial<IUserAuth>
   ): Promise<{ access_token: string; refresh_token: string; user: IUser }> => {
-    try {
-      const { email, password, username } = body;
+    const { email, password, username } = body;
 
-      const user_auth = await Auth.findOne({ $or: [{ username }, { email }] });
+    const user_auth = await Auth.findOne({ $or: [{ username }, { email }] });
 
-      if (!user_auth) {
-        throw new NotFoundError("This user does not exist");
-      }
-
-      if (!user_auth.verified) {
-        throw new ForbiddenError("User is not verified");
-      }
-
-      const is_password_correct = await user_auth.verifyPassword(
-        password as string
-      );
-
-      if (!is_password_correct) {
-        throw new BadRequestError("Email or username or password is incorrect");
-      }
-
-      const session = await this.session_service.create_session(user_auth._id);
-
-      const access_token = await Jwt_Helpers.sign_access_token(user_auth._id);
-      const refresh_token = await Jwt_Helpers.sign_refresh_token(
-        session?._id as string
-      );
-
-      const user = await this.user_service.find_user_by_email(user_auth.email);
-
-      return {
-        access_token,
-        refresh_token,
-        user,
-      };
-    } catch (error: any) {
-      logger.error("Unale to log in user");
-      throw new BadRequestError(error);
+    if (!user_auth) {
+      throw new NotFoundError("This user does not exist");
     }
+
+    if (!user_auth.verified) {
+      throw new ForbiddenError("User is not verified");
+    }
+
+    const is_password_correct = await user_auth.verifyPassword(
+      password as string
+    );
+
+    if (!is_password_correct) {
+      throw new BadRequestError("Email or username or password is incorrect");
+    }
+
+    const session = await this.session_service.create_session(user_auth._id);
+
+    const access_token = await Jwt_Helpers.sign_access_token(user_auth._id);
+    const refresh_token = await Jwt_Helpers.sign_refresh_token(
+      session?._id as string
+    );
+
+    const user = await this.user_service.find_user_by_email(user_auth.email);
+
+    return {
+      access_token,
+      refresh_token,
+      user,
+    };
   };
 
   public refresh_access_token = async (
     refresh_token: string
   ): Promise<string> => {
-    try {
-      const decoded: { session_id: string } =
-        await Jwt_Helpers.verify_refresh_token(refresh_token);
+    const decoded: { session_id: string } =
+      await Jwt_Helpers.verify_refresh_token(refresh_token);
 
-      if (!decoded) {
-        throw new BadRequestError("Refresh token does not exist");
-      }
-
-      const session = await this.session_service.update_session(
-        decoded.session_id
-      );
-
-      const access_token = await Jwt_Helpers.sign_access_token(
-        session?.user as string
-      );
-
-      return access_token;
-    } catch (error: any) {
-      throw new BadRequestError(error);
+    if (!decoded) {
+      throw new BadRequestError("Refresh token does not exist");
     }
+
+    const session = await this.session_service.update_session(
+      decoded.session_id
+    );
+
+    const access_token = await Jwt_Helpers.sign_access_token(
+      session?.user as string
+    );
+
+    return access_token;
   };
 }

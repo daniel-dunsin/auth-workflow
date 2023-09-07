@@ -24,9 +24,9 @@ app.use(express.urlencoded({ extended: false }));
 // app.use(setCache);
 
 // routes
-app.get("/", (req, res) => [
-  res.status(200).sendFile(path.join(__dirname, "./templates/index.html")),
-]);
+app.get("/", (req, res) => {
+  res.status(200).sendFile(path.join(__dirname, "./templates/index.html"));
+});
 app.use("/api/auth", auth_routes);
 app.use("/doc", swagger.serve, swagger.setup(api_doc));
 

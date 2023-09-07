@@ -48,6 +48,13 @@ class UserController {
 
       res.status(201).json({ message: "Verification email sent" });
     } catch (error: any) {
+      if (error.code === 11000) {
+        return next(
+          new BadRequestError(
+            "A user with this email, username or phone number exists"
+          )
+        );
+      }
       next(error);
     }
   };

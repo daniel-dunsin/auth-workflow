@@ -5,7 +5,7 @@ config();
 
 const settings = {
   mongo: {
-    url: process.env.MONGO_URL,
+    url: <string>process.env.MONGO_URL,
     collections: {
       auth: collections.auth,
       user: collections.user,
@@ -13,16 +13,17 @@ const settings = {
       session: collections.session,
     },
   },
-  port: process.env.PORT,
+  port: <string>process.env.PORT,
   mailer: {
-    password: process.env.NODEMAILER_PASS,
-    user: process.env.NODEMAILER_USER,
+    password: <string>process.env.NODEMAILER_PASS,
+    user: <string>process.env.NODEMAILER_USER,
   },
   secret_keys: {
-    access_token: process.env.ACCESS_TOKEN_KEY,
-    refresh_token: process.env.REFRESH_TOKEN_KEY,
+    access_token: <string>process.env.ACCESS_TOKEN_KEY,
+    refresh_token: <string>process.env.REFRESH_TOKEN_KEY,
   },
-  frontend_url: process.env.FRONTEND_URL,
+  frontend_url: <string>process.env.FRONTEND_URL,
+  google_client_id: <string>process.env.GOOGLE_CLIENT_ID,
 };
 
 export default settings;

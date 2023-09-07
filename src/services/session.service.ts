@@ -11,59 +11,47 @@ export default class SessionService {
   }
 
   public create_session = async (user: string): Promise<ISession> => {
-    try {
-      const session = await Session.findOne({ user });
+    const session = await Session.findOne({ user });
 
-      let result: ISession | undefined;
+    let result: ISession | undefined;
 
-      if (session) {
-        session.live = true;
-        result = await session.save();
-      } else {
-        result = await Session.create({ user });
-      }
-
-      return result;
-    } catch (error) {
-      throw new BadRequestError("Unable to create user session");
+    if (session) {
+      session.live = true;
+      result = await session.save();
+    } else {
+      result = await Session.create({ user });
     }
+
+    return result;
   };
 
   public update_session = async (
     session_id: string
   ): Promise<ISession | undefined> => {
-    try {
-      const session = await Session.findById(session_id);
+    const session = await Session.findById(session_id);
 
-      let result: ISession | undefined;
+    let result: ISession | undefined;
 
-      if (session) {
-        session.live = true;
-        result = await session.save();
+    if (session) {
+      session.live = true;
+      result = await session.save();
 
-        return result;
-      }
-    } catch (error) {
-      throw new BadRequestError("Unable to update user session");
+      return result;
     }
   };
 
   public logout_session = async (
     user: string
   ): Promise<ISession | undefined> => {
-    try {
-      const session = await Session.findOne({ user });
+    const session = await Session.findOne({ user });
 
-      let result: ISession | undefined;
+    let result: ISession | undefined;
 
-      if (session) {
-        session.live = false;
-        result = await session.save();
+    if (session) {
+      session.live = false;
+      result = await session.save();
 
-        return result;
-      }
-    } catch (error) {
-      throw new BadRequestError("Unable to logout user session");
+      return result;
     }
   };
 }
