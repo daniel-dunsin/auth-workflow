@@ -49,4 +49,7 @@ router.post(
   user_controller.refresh_access_token
 );
 
+router.get("/login/google", user_controller.get_google_login);
+router.get("/google/authenticate", user_controller.login_with_google);
+
 export default router;

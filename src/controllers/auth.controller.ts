@@ -5,6 +5,11 @@ import { IUser, IUserAuth } from "../interfaces/models/user.interface";
 import { IRequest } from "../interfaces/IRequest";
 import SessionService from "../services/session.service";
 import UserService from "../services/user.service";
+import {
+  getGoogleAuthTokens,
+  getConsentScreenLink,
+  getGoogleUserInfo,
+} from "../helpers/google.helper";
 
 class UserController {
   private readonly services: AuthService;
@@ -193,6 +198,43 @@ class UserController {
       const user = await this.user_services.find_user_by_email(user_auth.email);
 
       res.status(200).json({ message: "Profile found", data: user });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  public get_google_login = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) => {
+    try {
+      const link = getConsentScreenLink();
+
+      res.status(200).render("index", { link });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  public login_with_google = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) => {
+    try {
+      const code = <string>req.query.code;
+
+      const tokens = await getGoogleAuthTokens(code);
+
+      const userInfo = await getGoogleUserInfo({
+        id_token: tokens.id_token,
+        access_token: tokens.access_token,
+      });
+
+      const data = await this.services.login_user_with_google(userInfo);
+
+      res.status(200).json({ message: "Login with google successful", data });
     } catch (error) {
       next(error);
     }

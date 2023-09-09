@@ -23,7 +23,10 @@ const settings = {
     refresh_token: <string>process.env.REFRESH_TOKEN_KEY,
   },
   frontend_url: <string>process.env.FRONTEND_URL,
-  google_client_id: <string>process.env.GOOGLE_CLIENT_ID,
+  google: {
+    client_id: <string>process.env.GOOGLE_CLIENT_ID,
+    secret: <string>process.env.GOOGLE_CLIENT_SECRET,
+  },
 };
 
 export default settings;

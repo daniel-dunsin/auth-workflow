@@ -7,6 +7,17 @@ export enum IToken {
 
 export type ITokenTypes = IToken.password_reset_token | IToken.verify_otp_token;
 
+export enum ILoginType {
+  google = "google",
+  manual = "manual",
+}
+
+export interface ILoginResponse {
+  access_token: string;
+  refresh_token: string;
+  user: IUser;
+}
+
 export interface IUser {
   _id: string;
   firstname: string;
@@ -23,6 +34,7 @@ export interface IUserAuth {
   password?: string;
   confirm_password?: string;
   verified?: boolean;
+  loginType: ILoginType;
 }
 
 export interface IAuthMethods extends Document, IUserAuth {

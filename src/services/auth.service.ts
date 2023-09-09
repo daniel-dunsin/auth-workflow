@@ -1,5 +1,7 @@
 import { NextFunction, Request } from "express";
 import {
+  ILoginResponse,
+  ILoginType,
   IToken,
   ITokenTypes,
   IUser,
@@ -12,6 +14,7 @@ import {
   BadRequestError,
   ForbiddenError,
   NotFoundError,
+  UnAuthorizedError,
 } from "../handlers/error-responses.handler";
 import Token from "../models/user.token.model";
 import { CustomError } from "../handlers/error.handler";
@@ -26,6 +29,7 @@ import { v4 } from "uuid";
 import { logger } from "../configs/logger.config";
 import SessionService from "./session.service";
 import Jwt_Helpers from "../helpers/jwt.helper";
+import { GoogleUserInfo } from "../helpers/google.helper";
 
 export default class AuthService {
   private readonly user_service: UserService;
@@ -156,7 +160,7 @@ export default class AuthService {
 
   public login_user = async (
     body: Partial<IUserAuth>
-  ): Promise<{ access_token: string; refresh_token: string; user: IUser }> => {
+  ): Promise<ILoginResponse> => {
     const { email, password, username } = body;
 
     const user_auth = await Auth.findOne({ $or: [{ username }, { email }] });
@@ -212,5 +216,43 @@ export default class AuthService {
     );
 
     return access_token;
+  };
+
+  public login_user_with_google = async (
+    userInfo: GoogleUserInfo
+  ): Promise<ILoginResponse> => {
+    const userInDb = await Auth.findOne({ email: userInfo.email });
+
+    let auth_user: IUserAuth;
+
+    if (!userInfo.verified_email) {
+      throw new UnAuthorizedError("Your google account is not verified");
+    }
+
+    if (userInDb) {
+      if (userInDb.loginType != ILoginType.google) {
+        throw new BadRequestError(
+          "This account was set up with manual login, kinldy login with youe email & password"
+        );
+      }
+
+      auth_user = userInDb;
+    } else {
+      auth_user = await this.user_service.create_user({
+        email: userInfo.email,
+        firstname: userInfo.given_name,
+        lastname: userInfo.family_name,
+        username: userInfo.name,
+        loginType: ILoginType.google,
+      });
+    }
+    await this.session_service.create_session(auth_user._id);
+
+    const access_token = await Jwt_Helpers.sign_access_token(auth_user._id);
+    const refresh_token = await Jwt_Helpers.sign_refresh_token(auth_user._id);
+
+    const user = await this.user_service.find_user_by_email(auth_user.email);
+
+    return { access_token, refresh_token, user };
   };
 }

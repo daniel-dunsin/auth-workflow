@@ -14,6 +14,8 @@ const api_doc = require("./configs/api.config.json");
 
 const app = express();
 
+app.set("views", path.join(__dirname, "./views"));
+
 // middlewares
 const ONE_MINUTE = 1000 * 60;
 app.use(rate_limiter({ windowMs: ONE_MINUTE, max: 50 }));
@@ -22,6 +24,8 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 // app.use(setCache);
+
+app.set("view engine", "ejs");
 
 // routes
 app.get("/", (req, res) => {

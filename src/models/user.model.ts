@@ -8,7 +8,7 @@ const UserSchema = new mongoose.Schema<IUser>(
     lastname: { type: String, required: true, trim: true },
     email: { type: String, required: true, unique: true },
     username: { type: String, required: true, unique: true },
-    phone_number: { type: Number, required: true, unique: true },
+    phone_number: { type: Number, unique: true },
   },
   { toJSON: { virtuals: true }, toObject: { virtuals: true }, timestamps: true }
 );

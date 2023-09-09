@@ -1,4 +1,8 @@
-import { IUser, IUserAuth } from "../interfaces/models/user.interface";
+import {
+  ILoginType,
+  IUser,
+  IUserAuth,
+} from "../interfaces/models/user.interface";
 import User from "../models/user.model";
 import Auth from "../models/user.auth.model";
 import {
@@ -13,11 +17,23 @@ export default class UserService {
   public create_user = async (
     body: Partial<IUser & IUserAuth>
   ): Promise<IUserAuth> => {
-    const { username, firstname, lastname, password, email, phone_number } =
-      body;
+    const {
+      username,
+      firstname,
+      lastname,
+      password,
+      email,
+      phone_number,
+      loginType,
+    } = body;
 
     await User.create({ username, email, lastname, firstname, phone_number });
-    const user = await Auth.create({ username, email, password });
+    const user = await Auth.create({
+      username,
+      email,
+      password: password || "",
+      loginType: loginType || ILoginType.manual,
+    });
 
     return user;
   };
